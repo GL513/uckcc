@@ -1,29 +1,31 @@
-# taken from https://dev.to/abulka/comment/1dh3k thanks!
-name: Release UCKCC
-on:
-  push:
-    tags:
-      - "*"
+name: Build/release
+
+on: push
+
 jobs:
   release:
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-    steps:
 
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v1
+
+      - name: Install Node.js, NPM and Yarn
+        uses: actions/setup-node@v1
         with:
-          node-version: 16
-      - name: Install dependencies
-        run: npm install
-      - name: Publish to release using Electron Forge
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run publish
-      - name: Apple Silicon
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: npm run publish -- --arch=arm64
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 10
+
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          # GitHub token, automatically provided to the action
+          # (No need to define this secret in the repo settings)
+          github_token: ${{ secrets.github_token }}
+
+          # If the commit is tagged with a version (e.g. "v1.0.0"),
+          # release the app after building
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
